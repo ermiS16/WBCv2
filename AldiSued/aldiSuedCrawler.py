@@ -3,11 +3,15 @@ from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.keys import Keys
 import time
 
-Options.set_headless = True
-driver = webdriver.Firefox()
+option = Options()
+
+#activate if browser shall be headless
+#option.add_argument('--headless')
+
+driver = webdriver.Firefox(options=option)
+
 #driver.get("https://www.aldi-sued.de/de/homepage.html")
 driver.get("https://www.aldi-sued.de/de/produkte.html")
-#assert "Pr0gramm" in driver.title
 
 #xPath = "//a[@href='/de/produkte/produktsortiment/brot-aufstrich-und-cerealien.html']"
 xPath = "//a[contains(@href, '/de/produkte/produktsortiment/')]"
