@@ -13,11 +13,46 @@ import datetime
 import sys
 
 
+# Print iterations progress
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix} ( {iteration} / {total} )', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total:
+        print()
+
 
 def throwException():
-    print("Exception", sys.exc_info()[0], "occured.")
-    print("Detail:", sys.exc_info()[1])
+    file = open("../error.log", "a")
+    info1 = "Exception " + str(sys.exc_info()[0]) + " occured."
+    info2 = "Details: " + str(sys.exc_info()[0])
+    file.write("[ " + str(getCurrentDate()) + " ] | " + str(info1) + ", " + str(info2))
+    file.write("\n")
+    file.close()
+    # print("Exception", sys.exc_info()[0], "occured.")
+    # print("Detail:", sys.exc_info()[1])
 
+
+def getCurrentDate():
+    date = datetime.datetime.now()
+    #currentDate = date.strftime("%Y%m%d%H%M%S%f")
+    #currentDate = date.strftime("%Y%m%d%H%M%S")
+    currentDate = date.strftime("%Y-%m-%d, %H%M%S")
+    return currentDate
 
 def generateFileName(extension):
 
@@ -31,32 +66,40 @@ def generateFileName(extension):
 
 
 def saveSrcAsCSV(arr):
-    print("Save as CSV...")
+    print("Save as CSV")
     fileName = generateFileName(".csv")
-    print("Filename: " + fileName + "\n")
-    print("Label: " + str(arr[0]))
+    print("Filename: " + str(fileName) + "\n")
+    # print("Label: " + str(arr[0]))
+
+    idx = 0
+    arr_length = len(arr)
+    printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
 
     output_list = ";"
-    line_idx = 1
     for line in arr:
-        print("Line " + str(line_idx) + ": " + str(line))
+        # print("Line " + str(line_idx) + ": " + str(line))
         file = open(fileName, "a")
-        file.write(output_list.join(line) + "\n")
+        file.write(str(output_list.join(line)) + "\n")
         file.close()
-        line_idx += 1
+        time.sleep(0.1)
+        printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
 
-    print("\n")
+    print("Save Done!\n")
 
 
 def getURLList(arr):
-    print("Get URL List...")
+    print("Get URL List")
     url_list = []
     print("Sum All: " + str(len(arr)))
     for item in arr:
-        if item.get_attribute("href") not in url_list:
-            print(item.get_attribute("href"))
-            url_list.append(item.get_attribute("href"))
-    print("Sum Distinct: " + str(len(url_list)) + "\n")
+        try:
+            if item.get_attribute("href") not in url_list:
+                # print(item.get_attribute("href"))
+                url_list.append(item.get_attribute("href"))
+        except:
+            throwException()
+
+    print("Sum Distinct: " + str(len(url_list)))
     return url_list
 
 
@@ -86,130 +129,107 @@ driver.get("https://www.aldi-sued.de/de/produkte.html")
 
 xPath = "//a[contains(@href, '/de/produkte/produktsortiment/')]"
 
+print("Get Product Categories")
 elem = driver.find_elements_by_xpath(xPath)
-
-print("Get Product Categories...")
 url_list = getURLList(elem)
+url_list_length = len(url_list)
+url_list_idx = 1
 
-next_page_url = url_list[3]
-driver.get(str(next_page_url))
-delay = 3
-
-removeModal()
-try:
-    btn_show_more = driver.find_element_by_id("showMore")
-    btn_style = btn_show_more.get_attribute("style")
-    # print(str(btn_style))
-
-    if(btn_style != 'display:none'):
-        # print("Show more...")
-        #ActionChains(driver).click(btn_show_more).perform()
-        #driver.action.click(btn_show_more)
-        btn_show_more.click()
-
-        while btn_style != "display: none;":
-            # print("Show more...")
-            btn_show_more.click()
-            btn_style = btn_show_more.get_attribute("style")
-            # print(str(btn_style))
-except:
-    throwException()
-
-
-print("Get Product Sites...")
-
-xPath = "//a[contains(@href, '/de/p.')]"
-elem = driver.find_elements_by_xpath(xPath)
-product_url_list = getURLList(elem)
-#product_url_list = ['https://www.aldi-sued.de/de/p.bbq-laugenbaguette-mit--kraeuterbutter--g.490000000000039910.html']
-#product_url_list = ['https://www.aldi-sued.de/de/p.meine-kuchenwelt-frischei-waffeln--g.490100000000055521.html']
-
-print("Extract Data...")
-w, h = 4, (len(product_url_list)+1)
-p_arr = [[0 for x in range(w)] for y in range(h)]
-
-labels = ["Name", "Price", "Currency", "Description"]
-p_arr[0] = labels
-idx = 1
-for url in product_url_list:
-    print(str(url))
-    #next_page_url = product_url_list[0]
-    #driver.get(str(next_page_url))
-    driver.get(str(url))
+for category_url in url_list:
+    #print("Get Products From: " + str(category_url))
+    print(f'\rGet Products From: {category_url} ( {url_list_idx} / {url_list_length} )')
+    driver.get(str(category_url))
 
     removeModal()
     try:
-        product_data = driver.execute_script('var data = document.querySelectorAll("[data-product-name],'
-                                        '[data-price],'
-                                        '[data-currency],'
-                                        '[data-description]");'
-                                        'console.log(data);'
-                                        'return data;'
-                                     )
+        btn_show_more = driver.find_element_by_id("showMore")
+        btn_style = btn_show_more.get_attribute("style")
+        # print(str(btn_style))
+
+        if(btn_style != 'display:none'):
+            # print("Show more...")
+            #ActionChains(driver).click(btn_show_more).perform()
+            #driver.action.click(btn_show_more)
+            btn_show_more.click()
+
+            while btn_style != "display: none;":
+                # print("Show more...")
+                btn_show_more.click()
+                btn_style = btn_show_more.get_attribute("style")
+                # print(str(btn_style))
     except:
         throwException()
 
-    #time.sleep(90)
-    # try:
-    #     print(product_data[0].text)
-    #     print(product_data[1].text)
-    #     print(product_data[3].text)
-    # except:
-    #     throwException()
+    # count_products = driver.find_element_by_id("productsNumber").text.split(" ")[0]
 
-    try:
-        p_name = product_data[0].get_attribute('data-product-name')
-        p_price = product_data[1].text.split(" ")[1]
-        p_currency = product_data[1].text.split(" ")[0]
-        p_description = ""
 
-        for idx_desc in range(len(product_data)):
-            if(idx_desc > 1):
-                p_description += product_data[idx_desc].text.replace("\n", ", ")
-    except:
-        p_description = "NULL"
-        throwException()
+    print("Get Product Sites")
+    xPath = "//a[contains(@href, '/de/p.')]"
+    elem = driver.find_elements_by_xpath(xPath)
+    product_url_list = getURLList(elem)
 
-    # print("Name: " + p_name)
-    # print("Price: " + p_price)
-    # print("Currency: " + p_currency)
-    # print("Description" + p_description)
+    print("Start Extract Data")
+    w, h = 4, (len(product_url_list)+1)
+    p_arr = [[0 for x in range(w)] for y in range(h)]
 
-    line = [str(p_name), str(p_price), str(p_currency), str(p_description)]
-    p_arr[idx] = line
-    idx += 1
+    labels = ["Name", "Price", "Currency", "Description"]
+    p_arr[0] = labels
+    idx = 0
+    product_url_list_length = len(product_url_list)
+    printProgressBar(idx, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
+    for url in product_url_list:
+        # print(str(url))
+        #next_page_url = product_url_list[0]
+        #driver.get(str(next_page_url))
+        driver.get(str(url))
 
-    #print(labels)
-    print(line)
-    print("\n")
+        removeModal()
+        try:
+            product_data = driver.execute_script('var data = document.querySelectorAll("[data-product-name],'
+                                                 '[data-price],'
+                                                 '[data-currency],'
+                                                 '[data-description]");'
+                                                 'console.log(data);'
+                                                 'return data;'
+                                                 )
+        except:
+            throwException()
 
+        #time.sleep(90)
+        # try:
+        #     print(product_data[0].text)
+        #     print(product_data[1].text)
+        #     print(product_data[3].text)
+        # except:
+        #     throwException()
+
+        try:
+            p_name = product_data[0].get_attribute('data-product-name')
+            p_price = product_data[1].text.split(" ")[1]
+            p_currency = product_data[1].text.split(" ")[0]
+            p_description = ""
+
+            for idx_desc in range(len(product_data)):
+                if(idx_desc > 1):
+                    p_description += product_data[idx_desc].text.replace("\n", ", ")
+        except:
+            p_description = "NULL"
+            throwException()
+
+        # print("Name: " + p_name)
+        # print("Price: " + p_price)
+        # print("Currency: " + p_currency)
+        # print("Description" + p_description)
+
+        line = [str(p_name), str(p_price), str(p_currency), str(p_description)]
+        # p_arr[idx] = line
+        p_arr.append(line)
+
+        time.sleep(0.1)
+        printProgressBar(idx+1, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
+        idx += 1
+    url_list_idx += 1
+    print("Extract Data Done!\n")
 saveSrcAsCSV(p_arr)
-
-# for item in product_data:
-#    print(str(item.text))
-#time.sleep(90)
-
-
-#w, h = 7, 3
-#test_arr = [[0 for y in range(w)] for y in range(h)]
-
-#labels = ["Category", "Name", "Weight", "Volume", "Price", "Currency", "MwSt", "Discount", "Description"]
-#test_arr[0] = labels
-
-#line = ["Bread", "Roggen", "500g", "1.49", "7%", "0", "N/A"]
-#test_arr[1] = line
-#line = ["Bread", "Schwarzbrot", "500g", "1.79", "7%", "0", "N/A"]
-#test_arr[2] = line
-
-#saveSrcAsCSV(test_arr)
-
-# time.sleep(90)
 driver.close()
-
-# async def main():
-#     debug = False
-#     if len(sys.argv) > 1:
-#         runs = int(sys.argv[1])
-#         print("Debug: " + str(debug))
-#     if len(sys.argv) > 2:
-#         prog = str(sys.argv[2])
+print("Finished")
