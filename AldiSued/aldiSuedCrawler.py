@@ -77,12 +77,13 @@ def saveSrcAsCSV(arr):
 
     output_list = ";"
     for line in arr:
-        # print("Line " + str(line_idx) + ": " + str(line))
+        # print(str(line))
         file = open(fileName, "a")
-        file.write(str(output_list.join(line)) + "\n")
+        file.write(output_list.join(line) + "\n")
         file.close()
         time.sleep(0.1)
         printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
+        idx += 1
 
     print("Save Done!\n")
 
@@ -132,11 +133,12 @@ xPath = "//a[contains(@href, '/de/produkte/produktsortiment/')]"
 print("Get Product Categories")
 elem = driver.find_elements_by_xpath(xPath)
 url_list = getURLList(elem)
+#url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/brot-aufstrich-und-cerealien.html']
+
 url_list_length = len(url_list)
 url_list_idx = 1
 
 for category_url in url_list:
-    #print("Get Products From: " + str(category_url))
     print(f'\rGet Products From: {category_url} ( {url_list_idx} / {url_list_length} )')
     driver.get(str(category_url))
 
@@ -144,8 +146,6 @@ for category_url in url_list:
     try:
         btn_show_more = driver.find_element_by_id("showMore")
         btn_style = btn_show_more.get_attribute("style")
-        # print(str(btn_style))
-
         if(btn_style != 'display:none'):
             # print("Show more...")
             #ActionChains(driver).click(btn_show_more).perform()
@@ -156,11 +156,8 @@ for category_url in url_list:
                 # print("Show more...")
                 btn_show_more.click()
                 btn_style = btn_show_more.get_attribute("style")
-                # print(str(btn_style))
     except:
         throwException()
-
-    # count_products = driver.find_element_by_id("productsNumber").text.split(" ")[0]
 
 
     print("Get Product Sites")
@@ -170,19 +167,16 @@ for category_url in url_list:
 
     print("Start Extract Data")
     w, h = 4, (len(product_url_list)+1)
-    p_arr = [[0 for x in range(w)] for y in range(h)]
+    p_arr = []
 
     labels = ["Name", "Price", "Currency", "Description"]
-    p_arr[0] = labels
+    p_arr.append(labels)
     idx = 0
     product_url_list_length = len(product_url_list)
     printProgressBar(idx, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
     for url in product_url_list:
         # print(str(url))
-        #next_page_url = product_url_list[0]
-        #driver.get(str(next_page_url))
         driver.get(str(url))
-
         removeModal()
         try:
             product_data = driver.execute_script('var data = document.querySelectorAll("[data-product-name],'
@@ -194,14 +188,6 @@ for category_url in url_list:
                                                  )
         except:
             throwException()
-
-        #time.sleep(90)
-        # try:
-        #     print(product_data[0].text)
-        #     print(product_data[1].text)
-        #     print(product_data[3].text)
-        # except:
-        #     throwException()
 
         try:
             p_name = product_data[0].get_attribute('data-product-name')
@@ -222,7 +208,6 @@ for category_url in url_list:
         # print("Description" + p_description)
 
         line = [str(p_name), str(p_price), str(p_currency), str(p_description)]
-        # p_arr[idx] = line
         p_arr.append(line)
 
         time.sleep(0.1)
