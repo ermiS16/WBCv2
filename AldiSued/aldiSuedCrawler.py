@@ -137,6 +137,9 @@ url_list = getURLList(elem)
 
 url_list_length = len(url_list)
 url_list_idx = 1
+p_arr = []
+labels = ["Name", "Price", "Currency", "Description"]
+p_arr.append(labels)
 
 for category_url in url_list:
     print(f'\rGet Products From: {category_url} ( {url_list_idx} / {url_list_length} )')
@@ -167,10 +170,7 @@ for category_url in url_list:
 
     print("Start Extract Data")
     w, h = 4, (len(product_url_list)+1)
-    p_arr = []
 
-    labels = ["Name", "Price", "Currency", "Description"]
-    p_arr.append(labels)
     idx = 0
     product_url_list_length = len(product_url_list)
     printProgressBar(idx, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
