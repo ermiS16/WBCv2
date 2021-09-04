@@ -4,9 +4,11 @@ from selenium.webdriver.firefox.options import Options
 import time
 import datetime
 import sys
+import os
 from xml.etree.ElementTree import ElementTree
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
+
 
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
@@ -51,7 +53,7 @@ def getCurrentDate():
 
 def generateFileName(extension):
 
-    dest = "../Output/AldiSued/"
+    dest = "../Output/AldiNord/"
     date = datetime.datetime.now()
     #currentDate = date.strftime("%Y%m%d%H%M%S%f")
     currentDate = date.strftime("%Y%m%d%H%M%S")
@@ -81,6 +83,7 @@ def saveSrcAsCSV(arr):
         idx += 1
 
     print("Save Done!\n")
+
 
 def saveSrcAsXML(arr):
     print("Save as CSV")
@@ -130,19 +133,65 @@ def getURLList(arr):
     return url_list
 
 
-def removeModal():
-    try:
-        js_script = 'var c_modal = document.getElementById("c-modal");' \
-                    'c_modal.style.display = "none";' \
-                    'c_modal.setAttribute("tabindex", "0");' \
-                    'var modal_backdrop_show = document.getElementsByClassName("modal-backdrop show");' \
-                    'modal_backdrop_show[0].remove();' \
-                    'return 0'
-        result = driver.execute_script(js_script)
-        # print("Eval Result: " + str(result))
+def extractData(product_url_list, p_arr):
+    print("Start Extract Data")
+    idx = 0
+    product_url_list_length = len(product_url_list)
+    p_name = ""
+    p_price = ""
+    p_currency = ""
+    p_description = ""
 
-    except:
-        throwException()
+    if(product_url_list_length > 0):
+        printProgressBar(idx, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
+
+    for url in product_url_list:
+        # print(str(url))
+        driver.get(str(url))
+        try:
+            product_data = driver.execute_script('var data = document.querySelectorAll("div.mod-article-intro__header-headline, '
+                                                 'span.price__wrapper, span.price__unit, span.price__base, div.mod-copy");'
+                                                 'console.log(data);'
+                                                 'return data')
+        except:
+            throwException()
+
+
+        try:
+            p_name = product_data[0].text.replace("\n", " ")
+            p_price = product_data[1].text
+            p_currency = "€"
+            p_description = ""
+
+            for idx_desc in range(len(product_data)):
+                if(idx_desc > 1):
+                    p_description += product_data[idx_desc].text.replace("\n", ", ")
+                    p_description = p_description.replace(":,", ":")
+
+                    if(idx_desc < len(product_data)-1):
+                        p_description += ', '
+
+            if(p_description[-2] == ','):
+                p_description = p_description[0:len(p_description)-2]
+
+        except:
+            p_description = "NULL"
+            throwException()
+
+        # print("Name: " + p_name)
+        # print("Price: " + p_price)
+        # print("Currency: " + p_currency)
+        # print("Description" + p_description)
+
+        line = [str(p_name), str(p_price), str(p_currency), str(p_description)]
+        # print(line)
+        p_arr.append(line)
+
+        time.sleep(0.1)
+        printProgressBar(idx+1, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
+        idx += 1
+    print("Extract Data Done!\n")
+    return p_arr
 
 
 option = Options()
@@ -152,15 +201,31 @@ option.add_argument('--headless')
 driver = webdriver.Firefox(options=option)
 
 
-driver.get("https://www.aldi-sued.de/de/produkte.html")
+#driver.get("https://www.aldi-nord.de/sortiment")
 
-xPath = "//a[contains(@href, '/de/produkte/produktsortiment/')]"
+#xPath = "//a[contains(@href, '/sortiment/')]"
 
 print("Get Product Categories")
-elem = driver.find_elements_by_xpath(xPath)
-url_list = getURLList(elem)
-#url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/brot-aufstrich-und-cerealien.html']
-#url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/haushalt.html']
+#elem = driver.find_elements_by_xpath(xPath)
+#url_list = getURLList(elem)
+#url_list = ['https://www.aldi-nord.de/sortiment/neu.html']
+#url_list = ['https://www.aldi-nord.de/sortiment/blumen.html']
+#url_list = ['https://www.aldi-nord.de/sortiment/backwaren-aufstriche-cerealien.html']
+#url_list = ['https://www.aldi-nord.de/sortiment/kaffee-tee-kakao/kaffee.html']
+
+url_list = []
+filename = "URL_List.txt"
+if not os.path.isfile(filename):
+    print ("File does not exists")
+else:
+    with open(filename) as f:
+        urlContent = f.read().splitlines()
+
+
+for line in urlContent:
+    # print(line)
+    url_list.append(line)
+
 
 url_list_length = len(url_list)
 url_list_idx = 1
@@ -172,73 +237,17 @@ for category_url in url_list:
     print(f'\rGet Products From: {category_url} ( {url_list_idx} / {url_list_length} )')
     driver.get(str(category_url))
 
-    removeModal()
-    try:
-        btn_show_more = driver.find_element_by_id("showMore")
-        btn_style = btn_show_more.get_attribute("style")
-        if(btn_style != 'display:none'):
-            # print("Show more...")
-            btn_show_more.click()
-
-            while btn_style != "display: none;":
-                # print("Show more...")
-                btn_show_more.click()
-                btn_style = btn_show_more.get_attribute("style")
-    except:
-        throwException()
-
-
     print("Get Product Sites")
-    xPath = "//a[contains(@href, '/de/p.')]"
+    xPath = f"//a[contains(@href, '/sortiment/')]"
     elem = driver.find_elements_by_xpath(xPath)
     product_url_list = getURLList(elem)
 
-    print("Start Extract Data")
-    idx = 0
-    product_url_list_length = len(product_url_list)
-    printProgressBar(idx, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
-    for url in product_url_list:
-        # print(str(url))
-        driver.get(str(url))
-        removeModal()
-        try:
-            product_data = driver.execute_script('var data = document.querySelectorAll("[data-product-name],'
-                                                 '[data-price],'
-                                                 '[data-currency],'
-                                                 '[data-description]");'
-                                                 'console.log(data);'
-                                                 'return data;'
-                                                 )
-        except:
-            throwException()
+    p_arr = extractData(product_url_list, p_arr)
 
-        try:
-            p_name = product_data[0].get_attribute('data-product-name')
-            p_price = product_data[1].text.split(" ")[1]
-            p_currency = product_data[1].text.split(" ")[0]
-            p_description = ""
-
-            for idx_desc in range(len(product_data)):
-                if(idx_desc > 1):
-                    p_description += product_data[idx_desc].text.replace("\n", ", ")
-        except:
-            p_description = "NULL"
-            throwException()
-
-        # print("Name: " + p_name)
-        # print("Price: " + p_price)
-        # print("Currency: " + p_currency)
-        # print("Description" + p_description)
-
-        line = [str(p_name), str(p_price), str(p_currency), str(p_description)]
-        p_arr.append(line)
-
-        time.sleep(0.1)
-        printProgressBar(idx+1, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
-        idx += 1
     url_list_idx += 1
-    print("Extract Data Done!\n")
-#saveSrcAsCSV(p_arr)
+
+saveSrcAsCSV(p_arr)
 saveSrcAsXML(p_arr)
+#time.sleep(120)
 driver.close()
 print("Finished")

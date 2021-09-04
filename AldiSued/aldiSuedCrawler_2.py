@@ -60,57 +60,27 @@ def generateFileName(extension):
     return filename
 
 
-def saveSrcAsCSV(arr):
-    print("Save as CSV")
-    fileName = generateFileName(".csv")
-    print("Filename: " + str(fileName) + "\n")
-    # print("Label: " + str(arr[0]))
-
-    idx = 0
-    arr_length = len(arr)
-    printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
-
-    output_list = ";"
-    for line in arr:
-        # print(str(line))
-        file = open(fileName, "a")
-        file.write(output_list.join(line) + "\n")
-        file.close()
-        time.sleep(0.1)
-        printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
-        idx += 1
-
-    print("Save Done!\n")
-
 def saveSrcAsXML(arr):
-    print("Save as CSV")
+    print("Save as XML")
     fileName = generateFileName(".xml")
     print("Filename: " + str(fileName) + "\n")
     # print("Label: " + str(arr[0]))
     root = Element('Products')
     tree = ElementTree(root)
-    idx = 0
     arr_length = len(arr)
-
-    #printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
-    output_list = ";"
-    for line in arr:
+    idx = 0
+    printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
+    for info_text in arr:
         # print(str(line))
         product = SubElement(root, 'Product')
-        name = SubElement(product, 'p_name')
-        price = SubElement(product, 'p_price')
-        currency = SubElement(product, 'p_currency')
-        description = SubElement(product, 'p_description')
-        name.text = str(line[0])
-        price.text = str(line[1])
-        currency.text = str(line[2])
-        description.text = str(line[3])
+        description = SubElement(product, 'p_info')
+        description.text = str(info_text)
         time.sleep(0.1)
-        #printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
         idx += 1
+        printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
 
     with open(fileName, 'wb') as f:
-        tree.write(f, xml_declaration='UTF-8')
+        tree.write(f, xml_declaration=True)
     print("Save Done!\n")
 
 
@@ -165,8 +135,6 @@ url_list = getURLList(elem)
 url_list_length = len(url_list)
 url_list_idx = 1
 p_arr = []
-labels = ["Name", "Price", "Currency", "Description"]
-p_arr.append(labels)
 
 for category_url in url_list:
     print(f'\rGet Products From: {category_url} ( {url_list_idx} / {url_list_length} )')
@@ -201,44 +169,18 @@ for category_url in url_list:
         # print(str(url))
         driver.get(str(url))
         removeModal()
-        try:
-            product_data = driver.execute_script('var data = document.querySelectorAll("[data-product-name],'
-                                                 '[data-price],'
-                                                 '[data-currency],'
-                                                 '[data-description]");'
-                                                 'console.log(data);'
-                                                 'return data;'
-                                                 )
-        except:
-            throwException()
 
-        try:
-            p_name = product_data[0].get_attribute('data-product-name')
-            p_price = product_data[1].text.split(" ")[1]
-            p_currency = product_data[1].text.split(" ")[0]
-            p_description = ""
+        html_body = driver.find_elements_by_xpath("/html/body")
+        product_info = html_body[0].text
 
-            for idx_desc in range(len(product_data)):
-                if(idx_desc > 1):
-                    p_description += product_data[idx_desc].text.replace("\n", ", ")
-        except:
-            p_description = "NULL"
-            throwException()
-
-        # print("Name: " + p_name)
-        # print("Price: " + p_price)
-        # print("Currency: " + p_currency)
-        # print("Description" + p_description)
-
-        line = [str(p_name), str(p_price), str(p_currency), str(p_description)]
-        p_arr.append(line)
+        p_arr.append(product_info)
 
         time.sleep(0.1)
         printProgressBar(idx+1, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
         idx += 1
     url_list_idx += 1
     print("Extract Data Done!\n")
-#saveSrcAsCSV(p_arr)
+
 saveSrcAsXML(p_arr)
 driver.close()
 print("Finished")
