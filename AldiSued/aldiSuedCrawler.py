@@ -1,17 +1,14 @@
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver import ActionChains
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
-from selenium.common.exceptions import TimeoutException
-
 
 import time
 import datetime
 import sys
-
+import lxml
+from xml.etree.ElementTree import ElementTree
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+import xml.etree.ElementTree as ET
 
 # Print iterations progress
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
@@ -51,7 +48,7 @@ def getCurrentDate():
     date = datetime.datetime.now()
     #currentDate = date.strftime("%Y%m%d%H%M%S%f")
     #currentDate = date.strftime("%Y%m%d%H%M%S")
-    currentDate = date.strftime("%Y-%m-%d, %H%M%S")
+    currentDate = date.strftime("%Y-%m-%d, %H:%M:%S")
     return currentDate
 
 def generateFileName(extension):
@@ -84,6 +81,38 @@ def saveSrcAsCSV(arr):
         time.sleep(0.1)
         printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
         idx += 1
+
+    print("Save Done!\n")
+
+def saveSrcAsXML(arr):
+    print("Save as CSV")
+    fileName = generateFileName(".xml")
+    print("Filename: " + str(fileName) + "\n")
+    # print("Label: " + str(arr[0]))
+    root = Element('Products')
+    tree = ElementTree(root)
+    idx = 0
+    arr_length = len(arr)
+
+    #printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
+    output_list = ";"
+    for line in arr:
+        # print(str(line))
+        product = SubElement(root, 'Product')
+        name = SubElement(product, 'p_name')
+        price = SubElement(product, 'p_price')
+        currency = SubElement(product, 'p_currency')
+        description = SubElement(product, 'p_description')
+        name.text = str(line[0])
+        price.text = str(line[1])
+        currency.text = str(line[2])
+        description.text = str(line[3])
+        time.sleep(0.1)
+        #printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
+        idx += 1
+
+    with open(fileName, 'wb') as f:
+        tree.write(f, xml_declaration='UTF-8')
 
     print("Save Done!\n")
 
@@ -133,7 +162,8 @@ xPath = "//a[contains(@href, '/de/produkte/produktsortiment/')]"
 print("Get Product Categories")
 elem = driver.find_elements_by_xpath(xPath)
 url_list = getURLList(elem)
-#url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/brot-aufstrich-und-cerealien.html']
+url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/brot-aufstrich-und-cerealien.html']
+url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/haushalt.html']
 
 url_list_length = len(url_list)
 url_list_idx = 1
@@ -151,8 +181,6 @@ for category_url in url_list:
         btn_style = btn_show_more.get_attribute("style")
         if(btn_style != 'display:none'):
             # print("Show more...")
-            #ActionChains(driver).click(btn_show_more).perform()
-            #driver.action.click(btn_show_more)
             btn_show_more.click()
 
             while btn_style != "display: none;":
@@ -169,8 +197,6 @@ for category_url in url_list:
     product_url_list = getURLList(elem)
 
     print("Start Extract Data")
-    w, h = 4, (len(product_url_list)+1)
-
     idx = 0
     product_url_list_length = len(product_url_list)
     printProgressBar(idx, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
@@ -215,6 +241,7 @@ for category_url in url_list:
         idx += 1
     url_list_idx += 1
     print("Extract Data Done!\n")
-saveSrcAsCSV(p_arr)
+#saveSrcAsCSV(p_arr)
+saveSrcAsXML(p_arr)
 driver.close()
 print("Finished")
