@@ -4,6 +4,7 @@ from selenium.webdriver.firefox.options import Options
 import time
 import datetime
 import sys
+import os
 from xml.etree.ElementTree import ElementTree
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
@@ -56,7 +57,7 @@ def generateFileName(extension):
     #currentDate = date.strftime("%Y%m%d%H%M%S%f")
     currentDate = date.strftime("%Y%m%d%H%M%S")
 
-    filename = dest + __file__ + "_" + currentDate + extension
+    filename = dest + os.path.basename(__file__) + "_" + currentDate + extension
     return filename
 
 
@@ -68,7 +69,7 @@ def saveSrcAsCSV(arr):
 
     idx = 0
     arr_length = len(arr)
-    printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
+    #printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
 
     output_list = ";"
     for line in arr:
@@ -77,7 +78,7 @@ def saveSrcAsCSV(arr):
         file.write(output_list.join(line) + "\n")
         file.close()
         time.sleep(0.1)
-        printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
+        #printProgressBar(idx+1, arr_length, prefix='Progress:', suffix='Complete', length=50)
         idx += 1
 
     print("Save Done!\n")
@@ -238,7 +239,7 @@ for category_url in url_list:
         idx += 1
     url_list_idx += 1
     print("Extract Data Done!\n")
-#saveSrcAsCSV(p_arr)
+saveSrcAsCSV(p_arr)
 saveSrcAsXML(p_arr)
 driver.close()
 print("Finished")

@@ -51,21 +51,28 @@ def getCurrentDate():
     currentDate = date.strftime("%Y-%m-%d, %H:%M:%S")
     return currentDate
 
-def generateFileName(extension):
 
-    dest = "../Output/AldiNord/"
+def generateFileName(extension, category_url):
+    category = getCategory(category_url)
     date = datetime.datetime.now()
-    #currentDate = date.strftime("%Y%m%d%H%M%S%f")
+    currentDate = date.strftime("%Y%m%d")
+    try:
+        dest = f"../Output/AldiNord2/{currentDate}/"
+        os.mkdir(dest)
+    except:
+        throwException()
     currentDate = date.strftime("%Y%m%d%H%M%S")
-
-    filename = dest + __file__ + "_" + currentDate + extension
+    filename = dest + currentDate + "_" + category + extension
     return filename
 
 
+def getScriptNameWithoutExt():
+    return os.path.basename(__file__)[:-3]
 
-def saveSrcAsXML(arr):
+
+def saveSrcAsXML(arr, category_url):
     print("Save as XML")
-    fileName = generateFileName(".xml")
+    fileName = generateFileName(".xml", category_url)
     print("Filename: " + str(fileName) + "\n")
     # print("Label: " + str(arr[0]))
     root = Element('Products')
@@ -73,21 +80,31 @@ def saveSrcAsXML(arr):
     arr_length = len(arr)
 
     idx=0
-    printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
     for info_text in arr:
         # print(str(line))
         product = SubElement(root, 'Product')
+        product.set('processed', 'false')
         description = SubElement(product, 'p_info')
         description.text = str(info_text)
         time.sleep(0.1)
-        idx += 1
-        printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
 
     with open(fileName, 'wb') as f:
         tree.write(f, xml_declaration=True)
     print("Save Done!\n")
 
 
+def getCategory(category_url):
+    category = ""
+    for i in range(len(category_url)):
+        if i > 0:
+            c = category_url[-i]
+            if(c != '/'):
+                category = c + category
+            else:
+                break
+    category = category[:-5]
+    print("Category: " + str(category))
+    return category
 
 def getURLList(arr):
     print("Get URL List")
@@ -105,33 +122,6 @@ def getURLList(arr):
     return url_list
 
 
-def extractData(product_url_list, p_arr):
-    print("Start Extract Data")
-    idx = 0
-    product_url_list_length = len(product_url_list)
-    p_name = ""
-    p_price = ""
-    p_currency = ""
-    p_description = ""
-
-    if(product_url_list_length > 0):
-        printProgressBar(idx, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
-
-    for url in product_url_list:
-        # print(str(url))
-        driver.get(str(url))
-
-        html_body = driver.find_elements_by_xpath("/html/body")
-        product_info = html_body[0].text
-
-        p_arr.append(product_info)
-
-        time.sleep(0.1)
-        printProgressBar(idx+1, product_url_list_length, prefix='Progress:', suffix='Complete', length=50)
-        idx += 1
-    print("Extract Data Done!\n")
-    return p_arr
-
 
 option = Options()
 #activate if browser shall be headless
@@ -139,18 +129,7 @@ option.add_argument('--headless')
 
 driver = webdriver.Firefox(options=option)
 
-
-#driver.get("https://www.aldi-nord.de/sortiment")
-
-#xPath = "//a[contains(@href, '/sortiment/')]"
-
 print("Get Product Categories")
-#elem = driver.find_elements_by_xpath(xPath)
-#url_list = getURLList(elem)
-#url_list = ['https://www.aldi-nord.de/sortiment/neu.html']
-#url_list = ['https://www.aldi-nord.de/sortiment/blumen.html']
-#url_list = ['https://www.aldi-nord.de/sortiment/backwaren-aufstriche-cerealien.html']
-#url_list = ['https://www.aldi-nord.de/sortiment/kaffee-tee-kakao/kaffee.html']
 
 url_list = []
 filename = "URL_List.txt"
@@ -158,19 +137,24 @@ if not os.path.isfile(filename):
     print ("File does not exists")
 else:
     with open(filename) as f:
-        urlContent = f.read().splitlines()
+        urlContent = f.readlines()
+        #print(urlContent)
 
 
 for line in urlContent:
-    # print(line)
+    #print(line)
+    line = line.replace("\n", "")
     url_list.append(line)
 
 
+url_list = ['https://www.aldi-nord.de/sortiment/kaffee-tee-kakao/kaffee.html',
+            'https://www.aldi-nord.de/sortiment/backwaren-aufstriche-cerealien/ofenfrische-backwaren.html']
+
 url_list_length = len(url_list)
 url_list_idx = 1
-p_arr = []
-
 for category_url in url_list:
+    idx = 0
+    p_arr = []
     print(f'\rGet Products From: {category_url} ( {url_list_idx} / {url_list_length} )')
     driver.get(str(category_url))
 
@@ -179,11 +163,28 @@ for category_url in url_list:
     elem = driver.find_elements_by_xpath(xPath)
     product_url_list = getURLList(elem)
 
-    p_arr = extractData(product_url_list, p_arr)
+
+    print("Start Extract Data")
+    if(len(product_url_list) > 0):
+        printProgressBar(idx, len(product_url_list), prefix='Progress:', suffix='Complete', length=50)
+
+    for url in product_url_list:
+        # print(str(url))
+        driver.get(str(url))
+        html_body = driver.find_elements_by_xpath("/html/body")
+        product_info = html_body[0].text
+        product_info = product_info.replace("\n", "; ")
+        print(product_info + "\n")
+
+        p_arr.append(product_info)
+        time.sleep(0.1)
+        idx += 1
+        printProgressBar(idx, len(product_url_list), prefix='Progress:', suffix='Complete', length=50)
+    print("Extract Data Done!\n")
 
     url_list_idx += 1
+    saveSrcAsXML(p_arr, category_url)
 
-saveSrcAsXML(p_arr)
 #time.sleep(120)
 driver.close()
 print("Finished")

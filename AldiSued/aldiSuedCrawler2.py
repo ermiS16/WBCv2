@@ -4,6 +4,7 @@ from selenium.webdriver.firefox.options import Options
 import time
 import datetime
 import sys
+import os
 from xml.etree.ElementTree import ElementTree
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
@@ -49,39 +50,60 @@ def getCurrentDate():
     currentDate = date.strftime("%Y-%m-%d, %H:%M:%S")
     return currentDate
 
-def generateFileName(extension):
-
-    dest = "../Output/AldiSued/"
+def generateFileName(extension, category_url):
+    category = getCategory(category_url)
     date = datetime.datetime.now()
-    #currentDate = date.strftime("%Y%m%d%H%M%S%f")
+    currentDate = date.strftime("%Y%m%d")
+    try:
+        dest = f"../Output/AldiSued2/{currentDate}/"
+        os.mkdir(dest)
+    except:
+        throwException()
     currentDate = date.strftime("%Y%m%d%H%M%S")
-
-    filename = dest + __file__ + "_" + currentDate + extension
+    filename = dest + currentDate + "_" + category + extension
     return filename
 
 
-def saveSrcAsXML(arr):
+def getScriptNameWithoutExt():
+    return os.path.basename(__file__)[:-3]
+
+
+
+def saveSrcAsXML(arr, category_url):
     print("Save as XML")
-    fileName = generateFileName(".xml")
+    fileName = generateFileName(".xml", category_url)
     print("Filename: " + str(fileName) + "\n")
     # print("Label: " + str(arr[0]))
     root = Element('Products')
     tree = ElementTree(root)
     arr_length = len(arr)
-    idx = 0
-    printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
+
+    idx=0
     for info_text in arr:
         # print(str(line))
         product = SubElement(root, 'Product')
+        product.set('processed', 'false')
         description = SubElement(product, 'p_info')
         description.text = str(info_text)
         time.sleep(0.1)
-        idx += 1
-        printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
 
     with open(fileName, 'wb') as f:
         tree.write(f, xml_declaration=True)
     print("Save Done!\n")
+
+
+def getCategory(category_url):
+    category = ""
+    for i in range(len(category_url)):
+        if i > 0:
+            c = category_url[-i]
+            if(c != '/'):
+                category = c + category
+            else:
+                break
+    category = category[:-5]
+    print("Category: " + str(category))
+    return category
 
 
 def getURLList(arr):
@@ -134,9 +156,9 @@ url_list = getURLList(elem)
 
 url_list_length = len(url_list)
 url_list_idx = 1
-p_arr = []
 
 for category_url in url_list:
+    p_arr = []
     print(f'\rGet Products From: {category_url} ( {url_list_idx} / {url_list_length} )')
     driver.get(str(category_url))
 
@@ -172,7 +194,7 @@ for category_url in url_list:
 
         html_body = driver.find_elements_by_xpath("/html/body")
         product_info = html_body[0].text
-
+        product_info = product_info.replace("\n", "; ")
         p_arr.append(product_info)
 
         time.sleep(0.1)
@@ -180,7 +202,7 @@ for category_url in url_list:
         idx += 1
     url_list_idx += 1
     print("Extract Data Done!\n")
+    saveSrcAsXML(p_arr, category_url)
 
-saveSrcAsXML(p_arr)
 driver.close()
 print("Finished")

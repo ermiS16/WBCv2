@@ -58,7 +58,7 @@ def generateFileName(extension):
     #currentDate = date.strftime("%Y%m%d%H%M%S%f")
     currentDate = date.strftime("%Y%m%d%H%M%S")
 
-    filename = dest + __file__ + "_" + currentDate + extension
+    filename = dest + os.path.basename(__file__) + "_" + currentDate + extension
     return filename
 
 
@@ -94,7 +94,7 @@ def saveSrcAsXML(arr):
     tree = ElementTree(root)
     idx = 0
     arr_length = len(arr)
-
+    arr.remove(0)
     #printProgressBar(idx, arr_length, prefix='Progress:', suffix='Complete', length=50)
     output_list = ";"
     for line in arr:
@@ -219,7 +219,7 @@ if not os.path.isfile(filename):
     print ("File does not exists")
 else:
     with open(filename) as f:
-        urlContent = f.read().splitlines()
+        urlContent = f.readlines()
 
 
 for line in urlContent:
