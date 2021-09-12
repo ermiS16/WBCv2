@@ -88,7 +88,7 @@ def saveSrcAsXML(arr, category_url):
         time.sleep(0.1)
 
     with open(fileName, 'wb') as f:
-        tree.write(f, xml_declaration=True)
+        tree.write(f, encoding='UTF-8', xml_declaration=True)
     print("Save Done!\n")
 
 
@@ -113,8 +113,8 @@ def getURLList(arr):
     for item in arr:
         try:
             if item.get_attribute("href") not in url_list:
-                # print(item.get_attribute("href"))
                 url_list.append(item.get_attribute("href"))
+                # print(item.get_attribute("href"))
         except:
             throwException()
 
