@@ -1,7 +1,7 @@
 import os
 import sys
 
-html_code_map = {'&#38;': '&', '&amp;': '&',
+html_code_map = {'&amp;': '&',
                  '&#161;': '¡', '&iexcl;': '¡', '&#162;': '¢', '&cent;': '¢', '&#163;': '£', '&pound;': '£',
                  '&#164;': '¤', '&curren;': '¤', '&#165;': '¥', '&yen;': '¥', '&#166;': '¦', '&brvbar;': '¦',
                  '&#167;': '§', '&sect;': '§', '&#168;': '¨', '&uml;': '¨', '&#169;': '©', '&copy;': '©',
@@ -40,10 +40,7 @@ if len(sys.argv) == 1:
 print("Start Replacing Characters")
 
 file_list = os.listdir(src)
-# file_list = os.listdir("Output/AldiNord2/20210905_0")
 for entry in file_list:
-    # print(entry)
-    # filename = "Output/AldiNord2/20210905_0/" + entry
     filename = src + entry
     with open(filename) as f:
         xml = f.read()
