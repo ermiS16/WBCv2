@@ -22,7 +22,7 @@ pattern_rating_count = r"(Keine|\d?)( *)(\n?)( *)(Bewertungen)"
 pattern_quantity_price_relation = r"(\d* *\n?)(kg|g|ml|l)( *\n? *= *\n?)(€ *\n? *\d,\d*)"
 pattern_quantity = r"(\d x )?(\d+,?\d*)( ?|-?)(g|kg|Kg|ml|l|Stück)(;|-)"
 pattern_price = r"(€ \d+,?\d*)( |\n)"
-pattern_name = r"(Bewertungen;)( *\n?)(\D*)( *|\n?|;?)( <claim_p_quantity>| <claim_p_price>)"
+pattern_name = r"(Bewertungen;)( *\n?)(\D*|\d*)( *|\n?|;?)(\D*|\d*)( <claim_p_quantity>| <claim_p_price>)"
 
 input_dir = 'Output/AldiSued2/20210912/'
 output_dir = 'Output/AldiSued2/20210912_annotation/'
@@ -74,7 +74,7 @@ for file in xml_files:
 
                 result = re.search(pattern_name, p_info)
                 if result is not None:
-                    result_str = result.groups()[2].replace("\n", "").replace(";", "")
+                    result_str = result.groups()[2].replace("\n", "").replace(";", "") + result.groups()[3].replace("\n", "").replace(";", "") + result.groups()[4].replace("\n", "").replace(";", "")
                     p_info = p_info.replace(result_str.strip(),
                                             "<claim_p_name>" + result_str.strip() + "</claim_p_name>")
 
