@@ -2,6 +2,10 @@ import re
 import sys
 import os
 import xml.etree.ElementTree as ET
+from xml.etree.ElementTree import ElementTree
+from xml.etree.ElementTree import Element
+from xml.etree.ElementTree import SubElement
+from xml.etree.ElementTree import tostring
 
 
 def getFileNameWithoutExt(filename):
