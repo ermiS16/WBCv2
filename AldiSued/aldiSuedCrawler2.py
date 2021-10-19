@@ -58,6 +58,8 @@ def generateFileName(extension, category_url):
     date = datetime.datetime.now()
     currentDate = date.strftime("%Y%m%d")
     try:
+        dest = f"../Output/AldiSued2/"
+        os.mkdir(dest)
         dest = f"../Output/AldiSued2/{currentDate}/"
         os.mkdir(dest)
     except:
