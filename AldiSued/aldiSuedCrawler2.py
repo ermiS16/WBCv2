@@ -1,5 +1,8 @@
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+
 
 import time
 import datetime
@@ -149,7 +152,8 @@ driver.get("https://www.aldi-sued.de/de/produkte.html")
 xPath = "//a[contains(@href, '/de/produkte/produktsortiment/')]"
 
 print("Get Product Categories")
-elem = driver.find_elements_by_xpath(xPath)
+#elem = driver.find_elements_by_xpath(xPath)
+elem = driver.find_elements(By.XPATH, xPath)
 url_list = getURLList(elem)
 #url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/brot-aufstrich-und-cerealien.html']
 #url_list = ['https://www.aldi-sued.de/de/produkte/produktsortiment/haushalt.html']
@@ -164,7 +168,8 @@ for category_url in url_list:
 
     removeModal()
     try:
-        btn_show_more = driver.find_element_by_id("showMore")
+        # btn_show_more = driver.find_element_by_id("showMore")
+        btn_show_more = driver.find_element(By.ID, "showMore")
         btn_style = btn_show_more.get_attribute("style")
         if(btn_style != 'display:none'):
             # print("Show more...")
@@ -180,7 +185,8 @@ for category_url in url_list:
 
     print("Get Product Sites")
     xPath = "//a[contains(@href, '/de/p.')]"
-    elem = driver.find_elements_by_xpath(xPath)
+    #elem = driver.find_elements_by_xpath(xPath)
+    elem = driver.find_elements(By.XPATH, xPath)
     product_url_list = getURLList(elem)
 
     print("Start Extract Data")
@@ -192,7 +198,8 @@ for category_url in url_list:
         driver.get(str(url))
         removeModal()
 
-        html_body = driver.find_elements_by_xpath("/html/body")
+        # html_body = driver.find_elements_by_xpath("/html/body")
+        html_body = driver.find_elements(By.XPATH, "/html/body")
         product_info = html_body[0].text
         product_info = product_info.replace("\n", "; ")
         p_arr.append(product_info)
