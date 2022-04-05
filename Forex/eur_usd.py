@@ -55,13 +55,18 @@ def generateFileName(extension):
     date = datetime.datetime.now()
     currentDate = date.strftime("%Y%m%d")
     try:
-        dest = f"../Output/EURUSD/"
-        os.mkdir(dest)
-        dest = f"../Output/EURUSD/{currentDate}/"
+        dest = f"Output/EURUSD/"
         os.mkdir(dest)
     except:
         throwException()
-    currentDate = date.strftime("%Y%m%d%H%M%S")
+
+    try:
+        dest = f"Output/EURUSD/{currentDate}/"
+        os.mkdir(dest)
+    except:
+        throwException()
+
+    #currentDate = date.strftime("%Y%m%d")
     filename = dest + "EURUSD" + currentDate + extension
     return filename
 
@@ -69,13 +74,53 @@ def generateFileName(extension):
 def getScriptNameWithoutExt():
     return os.path.basename(__file__)[:-3]
 
+def getFileName(path):
+    path_parts = path.split("/")
+    return path_parts[-1]
 
+def getFilePath(path):
+    path_parts = path.split("/")
+
+    return "/".join(path_parts[:-1])
 
 def saveAsCSV(arr):
     print("Save as XML")
-    fileName = generateFileName(".xml")
-    print("Filename: " + str(fileName) + "\n")
+    file = generateFileName(".csv")
 
+    filename = getFileName(file)
+    filepath = getFilePath(file)
+    head = True
+
+    if filename in list(os.listdir(filepath)):
+        head = False
+
+    head_line = "timestamp;ask;bid\n"
+    content = ""
+    for entry in arr:
+        timestamp = entry.get('timestamp')
+        ask = entry.get('ask')
+        bid = entry.get('bid')
+
+        line = timestamp + ";" + ask + ";" + bid + "\n"
+
+        if head:
+            content = head_line + line
+            head = False
+        else:
+            content = content + line
+
+    with open(file, 'a') as f:
+        f.write(content)
+    f.close()
+    print("Filename: " + str(file) + "\n")
+
+
+file = generateFileName(".csv")
+filepath = getFilePath(file)
+filename = getFileName(file)
+print(file)
+print(filename)
+print(filepath)
 
 
 
@@ -124,10 +169,13 @@ script = '''
     
     return get_price();
 '''
-valid = False
+url = "https://www.dailyfx.com/forex-rates"
+print(f"Get URL: {url}")
 
+valid = False
+driver = webdriver.Firefox(options=option)
 while not valid:
-    driver.get("https://www.dailyfx.com/forex-rates")
+    driver.get(url)
     result = driver.execute_script(script)
 
     if result.get('ask') != "---" and result.get('bid') != '---':
@@ -136,16 +184,19 @@ while not valid:
     else:
         time.sleep(5)
         print("Fetch again")
+        driver.close()
+        driver = webdriver.Firefox(options=option)
 
-print("Start Period fetch")
+
+print("Start fetch period")
 res_list = []
 finished = False
-t_max = 5
+t_max = 60
 t = 0
-
+t1 = 0
 while not finished:
     t = t+1
-    if t == t_max:
+    if t >= t_max:
         finished = True
 
     result = driver.execute_script(script)
@@ -153,9 +204,9 @@ while not finished:
 
     res_list.append(result)
 
-    ask = result.get('ask')
-    bid = result.get('bid')
-    ts = result.get('timestamp')
+    #ask = result.get('ask')
+    #bid = result.get('bid')
+    #ts = result.get('timestamp')
 
 
 
@@ -163,10 +214,15 @@ while not finished:
     #print("Bid: ", bid)
     #print("TS: ", ts)
 
-    time.sleep(60)
-    print("Minute:", str(t))
+    time.sleep(1)
+    t1 = t1 + 1
+    if t1 % 10 == 0:
+        print(t1)
+    #print("Minute:", str(t))
 
-print(res_list)
+#print(res_list)
+
+saveAsCSV(res_list)
 
 #time.sleep(10)
 
