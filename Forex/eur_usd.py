@@ -8,6 +8,11 @@ import time
 import datetime
 import sys
 import os
+import psycopg
+
+__DBNAME__ = "forex"
+__DBUSER__ = "eric"
+
 from xml.etree.ElementTree import ElementTree
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import SubElement
@@ -114,13 +119,48 @@ def saveAsCSV(arr):
     f.close()
     print("Filename: " + str(file) + "\n")
 
+def saveToDB(arr):
+    # test_arr = [
+    #                 {'timestamp': '2022-04-05 16:08:02', 'ask': '1.08789', 'bid': '1.08786'},
+    #                 {'timestamp': '2022-04-05 16:08:04', 'ask': '1.05123', 'bid': '1.05126'},
+    #                 {'timestamp': '2022-04-05 16:08:06', 'ask': '1.07645', 'bid': '1.07642'}
+    #             ]
+    query_values = []
+    print("Save to DB")
+    sql_insert_stmt = "INSERT INTO eurusd(ask, bid, crawl_ts) VALUES"
+    sql_value_stmt = "(%s, %s, %s),"
 
-file = generateFileName(".csv")
-filepath = getFilePath(file)
-filename = getFileName(file)
-print(file)
-print(filename)
-print(filepath)
+    for entry in arr:
+        sql_insert_stmt = sql_insert_stmt + sql_value_stmt
+        ts = entry.get('timestamp')
+        ask = entry.get('ask')
+        bid = entry.get('bid')
+        query_values.append(ask)
+        query_values.append(bid)
+        query_values.append(ts)
+
+    sql_insert_stmt = sql_insert_stmt[:-1]
+    #print(sql_insert_stmt)
+
+    with psycopg.connect(f"dbname={__DBNAME__} user={__DBUSER__}") as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql_insert_stmt, query_values)
+
+            #cur.execute("SELECT * FROM eurusd")
+            #res = cur.fetchone()
+            #print(res)
+
+            conn.commit()
+
+#saveToDB(['test'])
+#sys.exit()
+
+# file = generateFileName(".csv")
+# filepath = getFilePath(file)
+# filename = getFileName(file)
+# print(file)
+# print(filename)
+# print(filepath)
 
 
 
@@ -191,7 +231,7 @@ while not valid:
 print("Start fetch period")
 res_list = []
 finished = False
-t_max = 60
+t_max = 1800
 t = 0
 t1 = 0
 while not finished:
@@ -216,13 +256,13 @@ while not finished:
 
     time.sleep(1)
     t1 = t1 + 1
-    if t1 % 10 == 0:
+    if t1 % 60 == 0:
         print(t1)
     #print("Minute:", str(t))
 
 #print(res_list)
-
-saveAsCSV(res_list)
+saveToDB(res_list)
+#saveAsCSV(res_list)
 
 #time.sleep(10)
 
